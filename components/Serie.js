@@ -1,5 +1,6 @@
 import SerieDetailRow from "../components/SerieDetailRow.js"
 import SeriePartList from "../components/SeriePartList.js"
+import CoverImageModal from "../components/CoverImageModal.js"
 
 export default {
     template: `
@@ -16,7 +17,7 @@ export default {
             </div>
             <div class="flex items-start">
                 <div class="w-1/3">
-                    <img :src="coverImageUrl" class="w-full mb-2"/>
+                    <img :src="coverImageUrl" class="w-full mb-2 series-cover-image-small" @click="showFullCoverImage=true"/>
                     <serie-detail-row key-name="Author" :value="serie.author"></serie-detail-row>
                     <serie-detail-row key-name="Illustrator" :value="serie.illustrator"></serie-detail-row>
                     <serie-detail-row key-name="Translator" :value="serie.translator"></serie-detail-row>
@@ -29,6 +30,7 @@ export default {
                     </strong>
                 </p>
             </div>
+            <cover-image-modal style="z-index:10" :open="showFullCoverImage" :coverImageUrl="coverImageUrl" :captionText="serie.title" @close="showFullCoverImage=false"></cover-image-modal>
             <serie-part-list style="z-index:10" :open="showPartList" :volumes="volumes" @close="showPartList=false"></serie-part-list>
             <div style="background-clip: content-box" class="h-12 bg-blue-300 px-2 w-full absolute bottom-0 left-0 flex items-center">
                 <div 
@@ -62,6 +64,7 @@ export default {
     data() {
         return {
             showPartList: false,
+            showFullCoverImage: false,
             volumes: []
         }
     },
@@ -70,7 +73,7 @@ export default {
     },
     props: ['serie'],
     components: {
-        SerieDetailRow, SeriePartList
+        SerieDetailRow, SeriePartList, CoverImageModal
     },
     computed: {
         firstPart() {
@@ -121,6 +124,7 @@ export default {
     methods: {
         async initPart() {
             this.showPartList = false;
+            this.showFullCoverImage = false;
             //this.$root.sharedStore.hideAlert();
             this.volumes = await this.loadVolumes();
             //window.scrollTo(0, 0);
