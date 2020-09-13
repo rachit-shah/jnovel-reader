@@ -100,6 +100,7 @@ export default {
             showPartList: false,
             showFooter: true,
             progress: 0,
+            savedProgress: 0,
             volumes: [],
             horizontalReading: false,
             horizontalReadingBreakpoints: [],
@@ -216,6 +217,8 @@ export default {
                     this.$root.sharedStore.setAlert(error.response.data.error.message);
                 }
             }
+
+            this.savedProgress = this.$root.readingList.readParts[this.part.id].completion
             window.scrollTo(0, 0);
         },
 
@@ -373,6 +376,13 @@ export default {
             if(this.horizontalReading && !wasHorizontalReading) {
                 setTimeout(() => this.initHorizontalReading(), 100);
             }
+        }
+    },
+    beforeUpdate() {
+        if((this.progress - this.savedProgress) > 0.1){
+            this.$root.api.updatePartCompletionStatus(this.$root.sharedStore.user.userId, this.part.id, this.progress);
+            this.$root.readingList.updateCompletion(this.part, this.progress);
+            this.savedProgress = this.progress
         }
     },
     components: {
