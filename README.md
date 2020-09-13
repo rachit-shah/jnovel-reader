@@ -1,7 +1,7 @@
 # J-Novel Club Unofficial Reader
 An Unofficial App to read novels from J-Novel Club
 
-https://adikus.github.io/jnovel-reader/
+https://rachit-shah.github.io/jnovel-reader/
 
 ![Logo](images/logo.png?raw=true)
 
