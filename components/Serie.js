@@ -1,11 +1,15 @@
 import SerieDetailRow from "../components/SerieDetailRow.js"
+import SeriePartList from "../components/SeriePartList.js"
 
 export default {
     template: `
     <div style="background-clip: content-box" class="relative w-full lg:w-1/3 flex-grow p-2 mb-4 bg-blue-200">
         <div class="text-gray-700 text-xs w-full pb-12">
             <div class="h-24 flex flex-wrap items-center bg-blue-300 px-2 w-full">
-                <strong class="w-full text-center text-base">{{serie.title}}</strong>
+                <strong class="w-full text-center text-base">
+                    <span class="bg-yellow-500 rounded mr-2 px-2 py-1 font-semibold" v-show="isReading">Reading</span>
+                    {{serie.title}}
+                </strong>
                 <span class="w-full text-center text-xxs">
                     ({{serie.titleShort}} / {{serie.titleOriginal}})
                 </span>
@@ -25,27 +29,48 @@ export default {
                     </strong>
                 </p>
             </div>
-            <div style="background-clip: content-box" class="h-12 bg-blue-300 px-2 w-full absolute bottom-0 left-0 flex items-center justify-end">
-                <div class="bg-yellow-500 rounded mr-2 px-2 py-1 font-semibold" v-show="isReading">Reading</div>
-                <router-link v-show="showPreview" :to="linkToPreview" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2">
-                    Preview
-                </router-link>
-                <router-link v-show="firstPart && !isReading" :to="linkToFirstPart" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2">
-                    First available part
-                </router-link>
-                <router-link v-show="latestPart" :to="linkToLatestPart" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2">
-                    Latest part
-                </router-link>
-                <router-link v-show="latestUnreadPart && isReading" :to="linkToLatestUnreadPart" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2">
-                    Continue reading
-                </router-link>
+            <serie-part-list style="z-index:10" :open="showPartList" :volumes="volumes" @close="showPartList=false"></serie-part-list>
+            <div style="background-clip: content-box" class="h-12 bg-blue-300 px-2 w-full absolute bottom-0 left-0 flex items-center">
+                <div 
+                    class="text-black-100 hover:text-white cursor-pointer mr-2" 
+                    style="position:absolute; float:left; top: 22%; left: 1.5em; width:15%;" 
+                    @click="showPartList = true"
+                >
+                    <svg class="fill-current" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
+                        <title>Part List</title>
+                        <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"/>
+                    </svg>
+                </div>
+                <div style="position:absolute; float:right; right:0.8em; width:85%;" class="justify-end">
+                    <router-link style="display: inline-block; max-width:7.15em; font-size:1.1em; text-overflow: ellipsis; white-space: nowrap; float: right;" v-show="latestUnreadPart && isReading" :to="linkToLatestUnreadPart" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2 text-center">
+                        Continue Reading
+                    </router-link>
+                    <router-link style="display: inline-block; max-width:7.15em; font-size:1.1em; white-space: nowrap; float: right;" v-show="latestPart" :to="linkToLatestPart" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2 text-center">
+                        Latest Part
+                    </router-link>
+                    <router-link style="display: inline-block; max-width:7.15em; font-size:1.1em; white-space: nowrap; float: right;" v-show="firstPart && !isReading" :to="linkToFirstPart" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2 text-center">
+                        First Part
+                    </router-link>
+                    <router-link style="display: inline-block; max-width:7.15em; font-size:1.1em; white-space: nowrap; float: right;" v-show="showPreview" :to="linkToPreview" class="bg-blue-400 hover:bg-transparent text-gray-700 font-semibold hover:text-gray-800 py-2 px-3 border border-blue-300 hover:border-blue-500 rounded mr-2 text-center">
+                        Preview
+                    </router-link>
+                </div>
             </div>
         </div>
         </div>
   `,
+    data() {
+        return {
+            showPartList: false,
+            volumes: []
+        }
+    },
+    created() {
+        this.initPart();
+    },
     props: ['serie'],
     components: {
-        SerieDetailRow
+        SerieDetailRow, SeriePartList
     },
     computed: {
         firstPart() {
@@ -91,6 +116,19 @@ export default {
         },
         linkToPreview() {
             return '/series/' + this.serie.id + '/part/preview';
+        }
+    },
+    methods: {
+        async initPart() {
+            this.showPartList = false;
+            //this.$root.sharedStore.hideAlert();
+            this.volumes = await this.loadVolumes();
+            //window.scrollTo(0, 0);
+        },
+
+        async loadVolumes() {
+            let partsResponse = await this.$root.api.loadSerieParts(this.serie.id);
+            return partsResponse.data;
         }
     }
 }
